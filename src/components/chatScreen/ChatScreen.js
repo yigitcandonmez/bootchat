@@ -4,18 +4,16 @@ import { userContext } from '../context/userContext';
 import BackgroundVideo from '../backgroundVideo/BackgroundVideo';
 import { io } from 'socket.io-client';
 
-const socket = io("https://bootchat-server.herokuapp.com");
+const socket = io("http://localhost:8080/");
 
 const ChatScreen = () => {
-  const { user, isLoggedIn, collectionName } =
+  const { user, isLoggedIn, channel } =
     useContext(userContext);
   const inputRef = useRef('');
 
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [channel, setChannel] = useState("game");
 
-  console.log(messages)
 
   const dummy = useRef();
 
@@ -23,7 +21,7 @@ const ChatScreen = () => {
     e.preventDefault();
 
     const data = {
-      channel: channel,
+      channel: channel.currentChannel,
       message: `${inputRef.current.value}`,
       photo: `${user.photo}`,
       name: `${user.name}`,
@@ -32,19 +30,32 @@ const ChatScreen = () => {
     }
 
     socket.emit("CHAT_MESSAGE", data);
-
     setMessage('');
   };
 
   useEffect(() => {
+    if (channel.prevChannel !== "") {
+      socket.emit("LEAVE_CHANNEL", channel);
+      setMessages("")
+    }
     socket.emit("JOIN_CHANNEL", channel);
-    return () => socket.disconnect();
-  }, []);
+
+    const fetchMessages = async () => {
+      const response = await fetch(`http://localhost:8080/getMessages?channel=${channel.currentChannel}`);
+      const responseJSON = await response.json();
+      setMessages(responseJSON)
+    };
+    fetchMessages();
+  }, [channel]);
+
 
   useEffect(() => {
     socket.on("message", (data) => {
-      console.log(data)
-      setMessages((messages) => [...messages, data]);
+      setMessages((messages) => {
+        return [
+          ...messages, data
+        ]
+      });
     })
   }, [])
 
@@ -66,10 +77,6 @@ const ChatScreen = () => {
       {isLoggedIn ? (
         <div className={styles.chatScreenContainer}>
           <div className={styles.messagesContainer}>
-            <h1 className={styles.collectionName}>
-              #{' '}
-              {collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}
-            </h1>
             <svg
               onClick={goUp}
               className={styles.upArrow}
@@ -85,7 +92,7 @@ const ChatScreen = () => {
                 d='M5 10l7-7m0 0l7 7m-7-7v18'
               />
             </svg>
-            {messages.length > 0 &&
+            {messages &&
               messages
                 .sort(function (x, y) {
                   return x.time - y.time;

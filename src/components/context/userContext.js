@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { app } from '../firebase/firebase';
-import { collection, getFirestore, onSnapshot } from 'firebase/firestore';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -10,27 +9,22 @@ import {
 
 const userContext = React.createContext();
 
-const db = getFirestore(app);
 
 const UserProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [collectionName, setCollectionName] = useState('sohbet');
+  const [channels, setChannels] = useState([]);
+  const [channel, setChannel] = useState({
+    prevChannel: "",
+    currentChannel: "Sohbet"
+  });
+
+  console.log(channel)
 
   const provider = new GoogleAuthProvider();
   const auth = getAuth();
-
-  const getCollectionName = (text) => {
-    setCollectionName(text);
-  };
-
-  useEffect(() => {
-    onSnapshot(collection(db, `${collectionName}`), (snapshot) => {
-      setMessages(snapshot.docs.map((doc) => doc.data()));
-    });
-  }, [collectionName]);
 
   const signInWithFirebase = () => {
     setIsLoading(true);
@@ -44,7 +38,7 @@ const UserProvider = ({ children }) => {
         setIsLoading(false);
       })
       .catch((err) => {
-        alert('Bir şeyler ters gitti :( Yeniden deneyin.', err);
+        alert(err.message);
         setIsLoading(false);
       });
   };
@@ -71,8 +65,10 @@ const UserProvider = ({ children }) => {
         handleLogout,
         isLoading,
         messages,
-        collectionName,
-        getCollectionName,
+        channels,
+        setChannels,
+        channel,
+        setChannel
       }}
     >
       {children}
