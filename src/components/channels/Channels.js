@@ -7,7 +7,7 @@ const Channels = () => {
 
   useEffect(() => {
     const getChannels = async () => {
-      const response = await fetch("http://localhost:8080/getChannels")
+      const response = await fetch("https://bootchat-server.herokuapp.com/getChannels")
       const json = await response.json();
       setChannels(json);
     };

@@ -4,7 +4,7 @@ import { userContext } from '../context/userContext';
 import BackgroundVideo from '../backgroundVideo/BackgroundVideo';
 import { io } from 'socket.io-client';
 
-const socket = io("http://localhost:8080/");
+const socket = io("https://bootchat-server.herokuapp.com");
 
 const ChatScreen = () => {
   const { user, isLoggedIn, channel } =
@@ -41,9 +41,9 @@ const ChatScreen = () => {
     socket.emit("JOIN_CHANNEL", channel);
 
     const fetchMessages = async () => {
-      const response = await fetch(`http://localhost:8080/getMessages?channel=${channel.currentChannel}`);
+      const response = await fetch(`https://bootchat-server.herokuapp.com/getMessages?channel=${channel.currentChannel}`);
       const responseJSON = await response.json();
-      setMessages(responseJSON)
+      setMessages(responseJSON);
     };
     fetchMessages();
   }, [channel]);
