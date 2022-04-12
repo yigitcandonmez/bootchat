@@ -1,34 +1,52 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import styles from './ChatScreen.module.css';
 import { userContext } from '../context/userContext';
-import { collection, addDoc, getFirestore } from 'firebase/firestore';
-import { app } from '../firebase/firebase';
 import BackgroundVideo from '../backgroundVideo/BackgroundVideo';
+import { io } from 'socket.io-client';
 
-const db = getFirestore(app);
+const socket = io("http://localhost:8080");
 
 const ChatScreen = () => {
-  const { user, isLoggedIn, messages, collectionName } =
+  const { user, isLoggedIn, collectionName } =
     useContext(userContext);
   const inputRef = useRef('');
 
-  const [text, setText] = useState('');
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [channel, setChannel] = useState("game");
+
+  console.log(messages)
 
   const dummy = useRef();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const docRef = await addDoc(collection(db, `${collectionName}`), {
+    const data = {
+      channel: channel,
       message: `${inputRef.current.value}`,
       photo: `${user.photo}`,
       name: `${user.name}`,
       email: `${user.email}`,
       time: Math.floor(new Date().getTime() / 1000),
-    });
+    }
 
-    setText('');
+    socket.emit("CHAT_MESSAGE", data);
+
+    setMessage('');
   };
+
+  useEffect(() => {
+    socket.emit("JOIN_CHANNEL", channel);
+    return () => socket.disconnect();
+  }, []);
+
+  useEffect(() => {
+    socket.on("message", (data) => {
+      console.log(data)
+      setMessages((messages) => [...messages, data]);
+    })
+  }, [])
 
   useEffect(() => {
     if (dummy.current) {
@@ -110,8 +128,8 @@ const ChatScreen = () => {
             <form onSubmit={handleSubmit} className={styles.chatForm}>
               <input
                 ref={inputRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 className={styles.input}
                 type='text'
                 required
